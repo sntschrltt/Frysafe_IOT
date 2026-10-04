@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../widgets/smooth_route.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/header_shell.dart';
 import 'device_status_screen.dart';
@@ -114,8 +115,7 @@ class ScanResultsScreen extends StatelessWidget {
               child: AppBlackButton(
                 s: s,
                 label: 'Pair Device →',
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const DeviceStatusScreen())),
+                onTap: () => Navigator.of(context).push(smoothRoute(const DeviceStatusScreen())),
               ),
             ),
             PageHeader(

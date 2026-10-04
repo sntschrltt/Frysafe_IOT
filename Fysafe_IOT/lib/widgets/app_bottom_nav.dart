@@ -4,7 +4,7 @@ import '../theme/app_theme.dart';
 /// Use inside a Stack. [s] = screen width / 1080.
 class AppBottomNav extends StatelessWidget {
   final double s;
-  final int current; // 0 Home, 1 History, 2 Alerts, 3 About
+  final int current; // 0 Home, 1 History, 2 Alerts, 3 Analytics
   final ValueChanged<int> onSelect;
   final VoidCallback onAdd;
   const AppBottomNav(
@@ -52,7 +52,7 @@ class AppBottomNav extends StatelessWidget {
             _item(152, 0, Icons.home_outlined, 'Home'),
             _item(336, 1, Icons.schedule, 'History'),
             _item(740, 2, Icons.notifications_none, 'Alerts'),
-            _item(922, 3, Icons.info_outline, 'About'),
+            _item(922, 3, Icons.bar_chart, 'Analytics'),
             Positioned(
               left: (542 - 66) * s,
               top: 60 * s,

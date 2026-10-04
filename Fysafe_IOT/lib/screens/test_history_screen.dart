@@ -40,15 +40,16 @@ class TestHistoryScreen extends StatelessWidget {
             Positioned(
               left: 0,
               right: 0,
-              bottom: 258 * s,
-              height: 492 * s,
+              bottom: 0,
+              height: 750 * s,
               child: const IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color(0x00B4B4B4), Color(0x80B4B4B4)],
+                      colors: [Color(0x00B4B4B4), Color(0x80B4B4B4), Color(0x80B4B4B4)],
+                      stops: [0, 0.656, 1],
                     ),
                   ),
                 ),

@@ -1,12 +1,14 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../services/device_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/smooth_route.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/header_shell.dart';
 import 'scan_results_screen.dart';
 
 void openAddDevice(BuildContext context) => Navigator.of(context)
-    .push(MaterialPageRoute(builder: (_) => const AddDeviceScreen()));
+    .push(smoothRoute(const AddDeviceScreen()));
 
 class AddDeviceScreen extends StatelessWidget {
   const AddDeviceScreen({super.key});
@@ -64,6 +66,12 @@ class AddDeviceScreen extends StatelessWidget {
         backgroundColor: AppColors.background,
         body: Stack(
           children: [
+            Positioned.fill(
+              child: SingleChildScrollView(
+                child: SizedBox(
+                  height: math.max(1920 * s, c.maxHeight),
+                  child: Stack(
+                    children: [
             Positioned(
               left: 367 * s,
               top: 367 * s,
@@ -120,7 +128,7 @@ class AddDeviceScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(55 * s),
                   border: Border.all(color: AppColors.border, width: 3 * s),
                 ),
-                child: Column(children: [
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   field('NETWORK NAME', DeviceService.networkName),
                   Container(height: 3 * s, color: AppColors.border),
                   field('DEFAULT PASSWORD', '••••••••', pwd: true),
@@ -150,8 +158,12 @@ class AddDeviceScreen extends StatelessWidget {
               child: AppBlackButton(
                 s: s,
                 label: 'Scan for Device →',
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const ScanResultsScreen())),
+                onTap: () => Navigator.of(context).push(smoothRoute(const ScanResultsScreen())),
+              ),
+            ),
+                    ],
+                  ),
+                ),
               ),
             ),
             PageHeader(s: s, title: 'ADD DEVICE', subtitle: 'Connect FrySafe'),

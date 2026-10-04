@@ -3,6 +3,7 @@ import '../services/device_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_bottom_nav.dart';
 import 'add_device_screen.dart';
+import 'analytics_screen.dart';
 import 'home_screen.dart';
 import 'test_history_screen.dart';
 
@@ -16,6 +17,7 @@ class AppShell extends StatelessWidget {
       final s = c.maxWidth / 1080;
       return Scaffold(
         backgroundColor: AppColors.background,
+        resizeToAvoidBottomInset: false, // keyboard must not push the nav up
         body: ValueListenableBuilder<int>(
           valueListenable: appTab,
           builder: (context, i, _) => Stack(
@@ -27,7 +29,7 @@ class AppShell extends StatelessWidget {
                     HomeScreen(),
                     TestHistoryScreen(),
                     _ComingSoon('Alerts'),
-                    _ComingSoon('About'),
+                    AnalyticsScreen(),
                   ],
                 ),
               ),

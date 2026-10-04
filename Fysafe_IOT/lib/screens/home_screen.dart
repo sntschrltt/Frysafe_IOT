@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../models/reading.dart';
 import '../services/device_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/header_shell.dart';
+import '../widgets/frysafe_header.dart';
+import '../widgets/summary_cards.dart';
 import '../widgets/sensor_card.dart';
 import 'add_device_screen.dart';
 
@@ -19,135 +20,104 @@ class HomeScreen extends StatelessWidget {
         valueListenable: svc.status,
         builder: (context, st, _) {
           final m = st == HomeStatus.result ? svc.latest : null;
-          final connected = st != HomeStatus.notConnected;
           final sev = m == null ? null : severityFromOdi(m.odi);
           final fill = sev?.color ?? AppColors.high;
+          Widget label(double left, String text) => Padding(
+                padding: EdgeInsets.only(left: left * s),
+                child: Text(text,
+                    style: AppText.arial(38 * s, weight: FontWeight.bold)),
+              );
           return Scaffold(
             backgroundColor: AppColors.background,
             body: Stack(
               children: [
-                Positioned(
-                  top: 321 * s,
-                  left: 96 * s,
-                  right: 92 * s,
-                  height: 413 * s,
-                  child: _HeroCard(s: s, status: st, m: m),
-                ),
-                Positioned(
-                  left: 91 * s,
-                  top: 783 * s,
-                  child: Text('Sensor Readings',
-                      style: AppText.arial(38 * s, weight: FontWeight.bold)),
-                ),
-                Positioned(
-                  top: 850 * s,
-                  left: 95 * s,
-                  width: 417 * s,
-                  height: 307 * s,
-                  child: SensorCard(
-                    s: s,
-                    icon: Container(
-                      width: 40 * s,
-                      height: 40 * s,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: SweepGradient(colors: [
-                          Colors.red, Colors.yellow, Colors.green,
-                          Colors.cyan, Colors.blue, Colors.purple, Colors.red,
-                        ]),
+                // Scrollable content (goes under the header and the nav)
+                Positioned.fill(
+                  child: ListView(
+                    padding: EdgeInsets.only(top: 321 * s, bottom: 298 * s),
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(96 * s, 0, 92 * s, 0),
+                        child: SizedBox(
+                          height: 413 * s,
+                          child: _HeroCard(s: s, status: st, m: m),
+                        ),
                       ),
-                    ),
-                    label: 'Color (RDR)',
-                    value: m?.rdr.toStringAsFixed(2),
-                    progress: m == null ? 0 : m.rdr / 1.2, // placeholder scale
-                    color: fill,
+                      SizedBox(height: 49 * s),
+                      label(91, 'Sensor Readings'),
+                      SizedBox(height: 29 * s),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(95 * s, 0, 92 * s, 0),
+                        child: SizedBox(
+                          height: 307 * s,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: SensorCard(
+                                  s: s,
+                                  icon: Container(
+                                    width: 40 * s,
+                                    height: 40 * s,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: SweepGradient(colors: [
+                                        Colors.red, Colors.yellow, Colors.green,
+                                        Colors.cyan, Colors.blue, Colors.purple,
+                                        Colors.red,
+                                      ]),
+                                    ),
+                                  ),
+                                  label: 'Color (RDR)',
+                                  value: m?.rdr.toStringAsFixed(2),
+                                  progress: m == null ? 0 : m.rdr / 1.2, // placeholder scale
+                                  color: fill,
+                                ),
+                              ),
+                              SizedBox(width: 60 * s),
+                              Expanded(
+                                child: SensorCard(
+                                  s: s,
+                                  icon: Icon(Icons.water_drop,
+                                      size: 46 * s, color: AppColors.brandOrange),
+                                  label: 'Turbidity',
+                                  value: m?.ntu.toStringAsFixed(1),
+                                  unit: 'NTU',
+                                  progress: m == null ? 0 : m.ntu / 4.0, // placeholder scale
+                                  color: fill,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 42 * s),
+                      label(100, 'Analytics'),
+                      SizedBox(height: 37 * s),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(100 * s, 0, 92 * s, 0),
+                        child: SizedBox(
+                          height: 354 * s,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(child: UsageSummaryCard(s: s)),
+                              SizedBox(width: 54 * s),
+                              Expanded(child: ReplacementSummaryCard(s: s)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Positioned(
-                  top: 850 * s,
-                  left: 572 * s,
-                  width: 416 * s,
-                  height: 307 * s,
-                  child: SensorCard(
-                    s: s,
-                    icon: Icon(Icons.water_drop,
-                        size: 46 * s, color: AppColors.brandOrange),
-                    label: 'Turbidity',
-                    value: m?.ntu.toStringAsFixed(1),
-                    unit: 'NTU',
-                    progress: m == null ? 0 : m.ntu / 4.0, // placeholder scale
-                    color: fill,
-                  ),
-                ),
-                if (connected)
-                  Positioned(
-                    left: 95 * s,
-                    right: 92 * s,
-                    bottom: 275 * s,
-                    height: 118 * s,
-                    child: _Banner(s: s),
-                  ),
-                _header(s, connected, svc),
+                FrySafeHeader(s: s),
               ],
             ),
           );
         },
       );
     });
-  }
-
-  Widget _header(double s, bool connected, DeviceService svc) {
-    final statusColor = connected ? AppColors.low : AppColors.veryHigh;
-    return HeaderShell(
-      s: s,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 46 * s,
-            top: 51 * s,
-            child: Image.asset('assets/images/logo.png',
-                width: 150 * s,
-                height: 150 * s,
-                errorBuilder: (_, __, ___) => Icon(Icons.shield,
-                    size: 120 * s, color: AppColors.brandOrange)),
-          ),
-          Positioned(
-            left: 200 * s,
-            top: 78 * s,
-            child: GestureDetector(
-              onLongPress: svc.reset, // demo only
-              child: Text('FRYSAFE',
-                  style: AppText.dmSans(64 * s, weight: FontWeight.w700)),
-            ),
-          ),
-          Positioned(
-            left: 198 * s,
-            top: 150 * s,
-            child: Text(
-                connected
-                    ? 'Master Buffalo – Sta. Mesa, Manila'
-                    : 'No probe detected.',
-                style: AppText.dmSans(26 * s, color: AppColors.textGray)),
-          ),
-          Positioned(
-            right: 70 * s,
-            top: 95 * s,
-            child: Row(
-              children: [
-                Container(
-                    width: 46 * s,
-                    height: 46 * s,
-                    decoration: BoxDecoration(
-                        color: statusColor, shape: BoxShape.circle)),
-                SizedBox(width: 16 * s),
-                Text(connected ? 'Connected' : 'No connection',
-                    style: AppText.arial(42 * s, color: statusColor)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -261,42 +231,6 @@ class _HeroCard extends StatelessWidget {
           border: Border.all(color: sev?.color ?? AppColors.border, width: 3 * s),
         ),
         child: content,
-      ),
-    );
-  }
-}
-
-class _Banner extends StatelessWidget {
-  final double s;
-  const _Banner({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(left: 19 * s),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18 * s),
-        border: Border.all(color: AppColors.high, width: 3 * s),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.warning_amber_outlined, size: 40 * s, color: AppColors.high),
-          SizedBox(width: 18 * s),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Replacement Needed Soon',
-                  style: AppText.dmSans(30 * s,
-                      weight: FontWeight.w700, color: AppColors.high)),
-              SizedBox(height: 8 * s),
-              Text('Last reading: 3 min ago',
-                  style: AppText.dmSans(30 * s,
-                      weight: FontWeight.w500, color: AppColors.textGray)),
-            ],
-          ),
-        ],
       ),
     );
   }
