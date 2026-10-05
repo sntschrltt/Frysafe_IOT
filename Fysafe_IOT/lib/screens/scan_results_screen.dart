@@ -54,7 +54,7 @@ class ScanResultsScreen extends StatelessWidget {
                   Positioned(
                     left: 287 * s,
                     top: 80 * s,
-                    child: Text('FrySafe Probe 0.1',
+                    child: Text('FRYSAFE Probe 0.1',
                         style: AppText.dmSans(37 * s, weight: FontWeight.w700)),
                   ),
                   Positioned(

@@ -49,3 +49,16 @@ class AppText {
   static TextStyle mono(double size, {Color color = AppColors.black}) =>
       GoogleFonts.dmMono(fontSize: size, color: color, height: 1.0);
 }
+
+/// Shared layout numbers (design px, 1080 wide). Change them here and every
+/// screen follows.
+class AppLayout {
+  /// Height of the rounded header at the top of each page.
+  static const headerHeight = 261.0;
+
+  /// Height of the bottom navigation bar.
+  static const navHeight = 205.0;
+
+  /// Bottom padding for scrolling lists so the last item clears the nav bar.
+  static const navClearance = navHeight + 37;
+}

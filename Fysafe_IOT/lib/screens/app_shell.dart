@@ -3,6 +3,7 @@ import '../services/device_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_bottom_nav.dart';
 import 'add_device_screen.dart';
+import 'alerts_screen.dart';
 import 'analytics_screen.dart';
 import 'home_screen.dart';
 import 'test_history_screen.dart';
@@ -28,7 +29,7 @@ class AppShell extends StatelessWidget {
                   children: const [
                     HomeScreen(),
                     TestHistoryScreen(),
-                    _ComingSoon('Alerts'),
+                    AlertsScreen(),
                     AnalyticsScreen(),
                   ],
                 ),
@@ -45,19 +46,4 @@ class AppShell extends StatelessWidget {
       );
     });
   }
-}
-
-class _ComingSoon extends StatelessWidget {
-  final String name;
-  const _ComingSoon(this.name);
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(
-          child: Text('$name\n(coming soon)',
-              textAlign: TextAlign.center,
-              style: AppText.arial(20, color: AppColors.textGray)),
-        ),
-      );
 }

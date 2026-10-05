@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/device_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_buttons.dart';
 import '../widgets/bar_chart.dart';
 import '../widgets/frysafe_header.dart';
 
@@ -169,20 +170,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             top: 102 * s,
             width: 126 * s,
             height: 80 * s,
-            child: GestureDetector(
+            child: AppButton(
+              s: s,
+              label: 'Add',
+              kind: AppButtonKind.orange,
+              size: AppButtonSize.small,
               onTap: () {
                 _focus.unfocus();
                 if (entry > 0) svc.addUsage(entry);
               },
-              child: Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                    color: AppColors.brandOrange,
-                    borderRadius: BorderRadius.circular(14 * s)),
-                child: Text('Add',
-                    style: AppText.dmSans(38 * s,
-                        weight: FontWeight.w700, color: Colors.white)),
-              ),
             ),
           ),
           Positioned(
@@ -228,24 +224,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ),
               Positioned(
                 right: 62 * s,
-                top: 84 * s,
+                top: 82 * s,
                 width: 352 * s,
-                height: 116 * s,
-                child: GestureDetector(
+                height: 120 * s,
+                child: AppButton(
+                  s: s,
+                  label: 'Oil replaced',
+                  icon: Icons.sync,
+                  kind: AppButtonKind.orange,
+                  size: AppButtonSize.medium,
                   onTap: () => _confirmReplace(context),
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                        color: AppColors.high,
-                        borderRadius: BorderRadius.circular(20 * s)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.sync, size: 52 * s, color: Colors.white),
-                      SizedBox(width: 14 * s),
-                      Text('Oil replaced',
-                          style: AppText.dmSans(40 * s,
-                              weight: FontWeight.w700, color: Colors.white)),
-                    ]),
-                  ),
                 ),
               ),
             ]);
@@ -407,7 +395,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           Positioned.fill(
             child: ListView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: EdgeInsets.only(top: 316 * s, bottom: 298 * s),
+              padding: EdgeInsets.only(top: 316 * s, bottom: AppLayout.navClearance * s),
               children: [
                 pad(96, 92, 22, _logCard(s)),
                 pad(94, 93, 23, _lastChangeCard(s)),
@@ -495,44 +483,32 @@ class _ReplaceSheet extends StatelessWidget {
                     .copyWith(height: 1.37)),
           ),
           Positioned(
-            left: 129 * s,
-            right: 104 * s,
-            top: 494 * s,
-            height: 131 * s,
-            child: GestureDetector(
+            left: 116 * s,
+            right: 116 * s,
+            top: 500 * s,
+            height: 120 * s,
+            child: AppButton(
+              s: s,
+              label: 'Yes, oil replaced',
+              kind: AppButtonKind.orange,
+              size: AppButtonSize.medium,
               onTap: () {
                 DeviceService.instance.markReplaced();
                 Navigator.of(context).pop();
               },
-              child: Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                    color: AppColors.high,
-                    borderRadius: BorderRadius.circular(28 * s)),
-                child: Text('Yes, oil replaced',
-                    style: AppText.dmSans(50 * s,
-                        weight: FontWeight.w600, color: Colors.white)),
-              ),
             ),
           ),
           Positioned(
-            left: 128 * s,
-            right: 105 * s,
-            top: 647 * s,
-            height: 132 * s,
-            child: GestureDetector(
+            left: 116 * s,
+            right: 116 * s,
+            top: 642 * s,
+            height: 120 * s,
+            child: AppButton(
+              s: s,
+              label: 'Cancel',
+              kind: AppButtonKind.outline,
+              size: AppButtonSize.medium,
               onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28 * s),
-                  border: Border.all(color: AppColors.border, width: 2 * s),
-                ),
-                child: Text('Cancel',
-                    style: AppText.dmSans(52 * s,
-                        weight: FontWeight.w600, color: AppColors.textGray)),
-              ),
             ),
           ),
         ]),

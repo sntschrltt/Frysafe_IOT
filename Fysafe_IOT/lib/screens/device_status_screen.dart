@@ -65,7 +65,7 @@ class DeviceStatusScreen extends StatelessWidget {
                   Positioned(
                     left: 156 * s,
                     top: 102 * s,
-                    child: Text('FrySafe is online and transmitting.',
+                    child: Text('FRYSAFE is online and transmitting.',
                         style: AppText.dmSans(28 * s, color: AppColors.low)),
                   ),
                 ]),
@@ -107,7 +107,7 @@ class DeviceStatusScreen extends StatelessWidget {
                 },
               ),
             ),
-            PageHeader(s: s, title: 'DEVICE STATUS', subtitle: 'FrySafe • Paired'),
+            PageHeader(s: s, title: 'DEVICE STATUS', subtitle: 'FRYSAFE • Paired'),
           ],
         ),
       );

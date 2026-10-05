@@ -1,12 +1,20 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../models/reading.dart';
 
 enum HomeStatus { notConnected, connected, loading, result }
 
 class Measurement {
   final int odi; // percent
   final double rdr; // color
-  final double ntu; // turbidity
-  const Measurement({required this.odi, required this.rdr, required this.ntu});
+  final double mv; // turbidity (millivolts)
+  final DateTime time; // when the reading was taken
+  const Measurement({
+    required this.odi,
+    required this.rdr,
+    required this.mv,
+    required this.time,
+  });
 }
 
 /// Current bottom-nav tab: 0 Home, 1 History, 2 Alerts, 3 About
@@ -21,9 +29,27 @@ class DeviceService {
   final status = ValueNotifier<HomeStatus>(HomeStatus.notConnected);
   Measurement? latest;
 
-  static const deviceName = 'Frysafe Device';
+  /// How long the Home "Replacement Needed Soon" banner stays on screen.
+  static const bannerDuration = Duration(seconds: 10);
+
+  /// true = Home shows the replacement banner (auto-hides after [bannerDuration]).
+  final bannerVisible = ValueNotifier<bool>(false);
+  Timer? _bannerTimer;
+
+  void _showBannerTemporarily() {
+    _bannerTimer?.cancel();
+    bannerVisible.value = true;
+    _bannerTimer = Timer(bannerDuration, () => bannerVisible.value = false);
+  }
+
+  void _hideBanner() {
+    _bannerTimer?.cancel();
+    bannerVisible.value = false;
+  }
+
+  static const deviceName = 'FRYSAFE Device';
   static const ipAddress = '192.168.1.108';
-  static const networkName = 'FrySafe Probe 0.1';
+  static const networkName = 'FRYSAFE Probe 0.1';
 
   /// Liters of oil the user logged today (mock start value).
   final todayLiters = ValueNotifier<double>(2.3);
@@ -59,12 +85,18 @@ class DeviceService {
     status.value = HomeStatus.loading;
     await Future.delayed(const Duration(seconds: 2));
     if (status.value != HomeStatus.loading) return;
-    latest = const Measurement(odi: 72, rdr: 0.72, ntu: 2.4);
+    latest = Measurement(
+        odi: 72, rdr: 0.72, mv: 2.4, time: DateTime.now());
     status.value = HomeStatus.result;
+    final sev = severityFromOdi(latest!.odi);
+    if (sev == Severity.high || sev == Severity.veryHigh) {
+      _showBannerTemporarily();
+    }
   }
 
   /// Demo: long-press the "FRYSAFE" title to go back to "not connected".
   void reset() {
+    _hideBanner();
     latest = null;
     status.value = HomeStatus.notConnected;
   }
@@ -80,6 +112,15 @@ String relativeDay(DateTime d) {
   if (diff <= 0) return 'Today';
   if (diff == 1) return 'Yesterday';
   return '$diff days ago';
+}
+
+/// "Just now", "3 min ago", "2 hr ago", then falls back to [relativeDay].
+String relativeTime(DateTime d) {
+  final diff = DateTime.now().difference(d);
+  if (diff.inMinutes < 1) return 'Just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+  if (diff.inHours < 24) return '${diff.inHours} hr ago';
+  return relativeDay(d);
 }
 
 String formatDateTime(DateTime d) {

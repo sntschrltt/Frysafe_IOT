@@ -48,11 +48,11 @@ const mockHistory = [
   ]),
 ];
 
-/// ASSUMED thresholds (matches your Test History samples). Change if your group uses others.
+/// ODI levels (same as the About screen): 0-24 Low, 25-49 Moderate, 50-74 High, 75-100 Very High.
 Severity severityFromOdi(int odi) {
-  if (odi >= 80) return Severity.veryHigh;
-  if (odi >= 60) return Severity.high;
-  if (odi >= 30) return Severity.moderate;
+  if (odi >= 75) return Severity.veryHigh;
+  if (odi >= 50) return Severity.high;
+  if (odi >= 25) return Severity.moderate;
   return Severity.low;
 }
 
