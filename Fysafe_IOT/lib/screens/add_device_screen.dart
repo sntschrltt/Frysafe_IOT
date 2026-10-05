@@ -104,7 +104,7 @@ class AddDeviceScreen extends StatelessWidget {
               left: 0,
               right: 0,
               top: 785 * s,
-              child: Text('Connect to FrySafe Wi-Fi',
+              child: Text('Connect to FRYSAFE Wi-Fi',
                   textAlign: TextAlign.center,
                   style: AppText.dmSans(46 * s, weight: FontWeight.w700)),
             ),
@@ -113,7 +113,7 @@ class AddDeviceScreen extends StatelessWidget {
               right: 0,
               top: 847 * s,
               child: Text(
-                  'Before scanning, connect your phone to\nthe FrySafe’s hotspot first.',
+                  'Before scanning, connect your phone to\nthe FRYSAFE’s hotspot first.',
                   textAlign: TextAlign.center,
                   style: AppText.arial(36 * s).copyWith(height: 1.17)),
             ),
@@ -140,7 +140,7 @@ class AddDeviceScreen extends StatelessWidget {
                 const TextSpan(text: 'Go to Phone '),
                 bold('Wi-Fi settings'),
                 const TextSpan(text: ' and connect to\n'),
-                bold('FrySafe Probe 0.1'),
+                bold('FRYSAFE Probe 0.1'),
               ]),
             ),
             Positioned.fill(
@@ -166,7 +166,7 @@ class AddDeviceScreen extends StatelessWidget {
                 ),
               ),
             ),
-            PageHeader(s: s, title: 'ADD DEVICE', subtitle: 'Connect FrySafe'),
+            PageHeader(s: s, title: 'ADD DEVICE', subtitle: 'Connect FRYSAFE'),
           ],
         ),
       );

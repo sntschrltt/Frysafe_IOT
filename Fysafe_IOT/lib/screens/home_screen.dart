@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/reading.dart';
 import '../services/device_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_buttons.dart';
 import '../widgets/frysafe_header.dart';
+import '../widgets/replacement_banner.dart';
 import '../widgets/summary_cards.dart';
 import '../widgets/sensor_card.dart';
 import 'add_device_screen.dart';
@@ -16,12 +18,17 @@ class HomeScreen extends StatelessWidget {
     final svc = DeviceService.instance;
     return LayoutBuilder(builder: (context, c) {
       final s = c.maxWidth / 1080;
-      return ValueListenableBuilder<HomeStatus>(
-        valueListenable: svc.status,
-        builder: (context, st, _) {
+      return ListenableBuilder(
+        listenable: Listenable.merge([svc.status, svc.bannerVisible]),
+        builder: (context, _) {
+          final st = svc.status.value;
           final m = st == HomeStatus.result ? svc.latest : null;
           final sev = m == null ? null : severityFromOdi(m.odi);
           final fill = sev?.color ?? AppColors.high;
+          // Banner: High / Very High reading, and only for the first 10 seconds
+          final showBanner = svc.bannerVisible.value &&
+              m != null &&
+              (sev == Severity.high || sev == Severity.veryHigh);
           Widget label(double left, String text) => Padding(
                 padding: EdgeInsets.only(left: left * s),
                 child: Text(text,
@@ -34,7 +41,10 @@ class HomeScreen extends StatelessWidget {
                 // Scrollable content (goes under the header and the nav)
                 Positioned.fill(
                   child: ListView(
-                    padding: EdgeInsets.only(top: 321 * s, bottom: 298 * s),
+                    padding: EdgeInsets.only(
+                        top: 321 * s,
+                        // extra room so the banner never hides the last cards
+                        bottom: (AppLayout.navClearance + (showBanner ? 160 : 0)) * s),
                     children: [
                       Padding(
                         padding: EdgeInsets.fromLTRB(96 * s, 0, 92 * s, 0),
@@ -81,9 +91,9 @@ class HomeScreen extends StatelessWidget {
                                   icon: Icon(Icons.water_drop,
                                       size: 46 * s, color: AppColors.brandOrange),
                                   label: 'Turbidity',
-                                  value: m?.ntu.toStringAsFixed(1),
-                                  unit: 'NTU',
-                                  progress: m == null ? 0 : m.ntu / 4.0, // placeholder scale
+                                  value: m?.mv.toStringAsFixed(1),
+                                  unit: 'mV',
+                                  progress: m == null ? 0 : m.mv / 4.0, // placeholder scale
                                   color: fill,
                                 ),
                               ),
@@ -111,6 +121,32 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+                // Replacement notice: pops up above the bottom nav, then hides itself
+                Positioned(
+                  left: 91 * s,
+                  right: 91 * s,
+                  bottom: (AppLayout.navHeight + 24) * s,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                                begin: const Offset(0, 0.3), end: Offset.zero)
+                            .animate(anim),
+                        child: child,
+                      ),
+                    ),
+                    child: showBanner
+                        ? ReplacementBanner(
+                            key: const ValueKey('replacement-banner'),
+                            s: s,
+                            severity: sev!,
+                            lastReading: m!.time,
+                          )
+                        : const SizedBox.shrink(key: ValueKey('no-banner')),
+                  ),
+                ),
                 FrySafeHeader(s: s),
               ],
             ),
@@ -135,7 +171,7 @@ class _HeroCard extends StatelessWidget {
     switch (status) {
       case HomeStatus.notConnected:
         content = Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('FrySafe is not connected',
+          Text('FRYSAFE is not connected',
               style: AppText.dmSans(52 * s,
                   weight: FontWeight.w500, color: AppColors.textGray)),
           SizedBox(height: 43 * s),
@@ -145,30 +181,24 @@ class _HeroCard extends StatelessWidget {
                       weight: FontWeight.w700, color: AppColors.high)
                   .copyWith(fontStyle: FontStyle.italic, height: 0.93)),
           SizedBox(height: 42 * s),
-          GestureDetector(
+          AppButton(
+            s: s,
+            label: '+  PAIR THE PROBE',
+            kind: AppButtonKind.orange,
+            size: AppButtonSize.small,
+            width: 399 * s,
             onTap: () => openAddDevice(context),
-            child: Container(
-              width: 399 * s,
-              height: 80 * s,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                  color: AppColors.brandOrange,
-                  borderRadius: BorderRadius.circular(16 * s)),
-              child: Text('+  PAIR THE PROBE',
-                  style: AppText.dmSans(38 * s,
-                      weight: FontWeight.w700, color: Colors.white)),
-            ),
           ),
         ]);
       case HomeStatus.connected:
         content = Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('FrySafe is now\nconnected!',
+          Text('FRYSAFE is now\nconnected!',
               textAlign: TextAlign.center,
               style: AppText.dmSans(72 * s,
                       weight: FontWeight.w700, color: AppColors.brandOrange)
                   .copyWith(height: 0.98)),
           SizedBox(height: 20 * s),
-          Text('Insert the FrySafe probe into the cooking oil for testing.',
+          Text('Insert the FRYSAFE probe into the cooking oil for testing.',
               textAlign: TextAlign.center,
               style: AppText.dmSans(25 * s,
                       weight: FontWeight.w700, color: AppColors.high)

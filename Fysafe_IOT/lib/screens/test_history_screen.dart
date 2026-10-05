@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/reading.dart';
 import '../theme/app_theme.dart';
+import '../widgets/header_shell.dart';
 import '../widgets/reading_card.dart';
 
 class TestHistoryScreen extends StatelessWidget {
@@ -17,7 +18,9 @@ class TestHistoryScreen extends StatelessWidget {
             // Scrollable list (goes under header and nav)
             Positioned.fill(
               child: ListView(
-                padding: EdgeInsets.only(top: 258 * s, bottom: 258 * s + 40 * s),
+                padding: EdgeInsets.only(
+                    top: AppLayout.headerHeight * s,
+                    bottom: AppLayout.navClearance * s),
                 children: [
                   for (var i = 0; i < mockHistory.length; i++) ...[
                     Padding(
@@ -55,56 +58,15 @@ class TestHistoryScreen extends StatelessWidget {
                 ),
               ),
             ),
-            _Header(s: s),
+            AppHeader(
+              s: s,
+              title: 'TEST HISTORY',
+              subtitle: 'All recorded readings',
+              actionIcon: Icons.file_download_outlined,
+            ),
           ],
         ),
       );
     });
-  }
-}
-
-class _Header extends StatelessWidget {
-  final double s;
-  const _Header({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    // Container is 3px bigger on the sides/top so the border only shows at the bottom.
-    return Positioned(
-      top: -3 * s,
-      left: -3 * s,
-      right: -3 * s,
-      height: 261 * s,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(70 * s)),
-          border: Border.all(color: AppColors.border, width: 3 * s),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              left: 90 * s,
-              top: 70 * s,
-              child: Text('TEST HISTORY',
-                  style: AppText.dmSans(68 * s,
-                      weight: FontWeight.w700, letterSpacing: -0.5)),
-            ),
-            Positioned(
-              left: 96 * s,
-              top: 146 * s,
-              child: Text('All recorded readings',
-                  style: AppText.dmSans(28 * s, color: AppColors.textGray)),
-            ),
-            Positioned(
-              right: 72 * s,
-              top: 69 * s,
-              child: Icon(Icons.file_download_outlined,
-                  size: 90 * s, color: AppColors.black),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
