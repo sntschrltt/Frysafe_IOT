@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../widgets/app_buttons.dart';
 import '../widgets/frysafe_header.dart';
 import '../widgets/replacement_banner.dart';
+import '../widgets/rul_card.dart';
 import '../widgets/summary_cards.dart';
 import '../widgets/sensor_card.dart';
 import 'add_device_screen.dart';
@@ -53,6 +54,17 @@ class HomeScreen extends StatelessWidget {
                           child: _HeroCard(s: s, status: st, m: m),
                         ),
                       ),
+                      // Remaining useful life (only when there is a reading)
+                      if (m != null) ...[
+                        SizedBox(height: 28 * s),
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(96 * s, 0, 92 * s, 0),
+                          child: SizedBox(
+                            height: 205 * s,
+                            child: RulCard(s: s, odi: m.odi),
+                          ),
+                        ),
+                      ],
                       SizedBox(height: 49 * s),
                       label(91, 'Sensor Readings'),
                       SizedBox(height: 29 * s),
