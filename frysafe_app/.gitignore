@@ -53,3 +53,5 @@ app.*.map.json
 
 # Arduino Related files
 /FrySafe_Main.ino
+
+# Test comment
