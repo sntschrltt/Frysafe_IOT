@@ -52,4 +52,4 @@ app.*.map.json
 /ios/Flutter/Generated.xcconfig
 
 # Arduino Related files
-FrySafe_Main.imo
+/FrySafe_Main.ino
