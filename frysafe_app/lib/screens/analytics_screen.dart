@@ -6,15 +6,7 @@ import '../widgets/app_buttons.dart';
 import '../widgets/bar_chart.dart';
 import '../widgets/frysafe_header.dart';
 
-// MOCK chart data. Replace with the logged data later.
-const _days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const _usage7 = [10.0, 11.0, 5.0, 7.0, 14.0, 10.5, 14.5];
-const _weeks = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
-const _usage30 = [9.5, 11.0, 10.0, 12.5]; // avg L/day per week
-const _replDates7 = ['Sept 18', 'Sept 21', 'Sept 23', 'Sept 26', 'Sept 28', 'Sept 30'];
-const _repl7 = [5.0, 6.0, 3.0, 4.0, 8.0, 7.0]; // times oil was used before a change
-const _replDates30 = ['Sept 3', 'Sept 8', 'Sept 13', 'Sept 18', 'Sept 24', 'Sept 30'];
-const _repl30 = [4.0, 5.0, 6.0, 5.0, 7.0, 6.0];
+const _wd3 = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 String _num(double v) => v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(1);
 
@@ -279,13 +271,29 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       );
 
   Widget _usageCard(double s) {
-    final labels = week ? [for (final d in _days) d.substring(0, 3)] : _weeks;
-    final values = week ? _usage7 : _usage30;
+    final today = dayOnly(DateTime.now());
+    final List<String> labels;
+    final List<double> values;
+    if (week) {
+      // last 7 days, today on the right
+      labels = [
+        for (var i = 6; i >= 0; i--) _wd3[shiftDay(today, -i).weekday - 1]
+      ];
+      values = svc.usageLastDays(7);
+    } else {
+      // last 28 days as 4 weeks: average liters per day
+      labels = const ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
+      final d = svc.usageLastDays(28);
+      values = [
+        for (var w = 0; w < 4; w++)
+          d.sublist(w * 7, w * 7 + 7).reduce((a, b) => a + b) / 7
+      ];
+    }
+    final hasData = values.any((v) => v > 0);
     final avg = values.reduce((a, b) => a + b) / values.length;
     final peak = values.indexOf(values.reduce((a, b) => a > b ? a : b));
-    final peakName = week ? labels[peak].substring(0, 3) : labels[peak];
     return Container(
-      height: 552 * s,
+      height: 614 * s,
       decoration: _card(s, 55),
       child: Stack(children: [
         Positioned(
@@ -294,10 +302,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           child: Text('Daily Oil Usage',
               style: AppText.dmSans(44 * s, weight: FontWeight.w600)),
         ),
-        Positioned(
-            right: 61 * s,
-            top: 44 * s,
-            child: _chip(s, 'Peak: $peakName ${_num(values[peak])} L')),
+        if (hasData)
+          Positioned(
+              right: 61 * s,
+              top: 44 * s,
+              child: _chip(s, 'Peak: ${labels[peak]} ${_num(values[peak])} L')),
         Positioned(
           left: 59 * s,
           top: 113 * s,
@@ -317,26 +326,45 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         Positioned(
           left: 70 * s,
           right: 66 * s,
-          top: 160 * s,
-          child: SimpleBarChart(
-            s: s,
-            labels: labels,
-            values: values,
-            valueText: _num,
-            plotHeight: 330,
-            highlightMax: true,
-          ),
+          top: 222 * s, // below the big number (ends ~193) + room for the bar value labels
+          child: hasData
+              ? SimpleBarChart(
+                  s: s,
+                  labels: labels,
+                  values: values,
+                  valueText: _num,
+                  plotHeight: 330,
+                  highlightMax: true,
+                )
+              : SizedBox(
+                  height: 330 * s,
+                  child: Center(
+                    child: Text('No usage logged yet',
+                        style: AppText.dmSans(34 * s, color: AppColors.textGray)),
+                  ),
+                ),
         ),
       ]),
     );
   }
 
   Widget _replacementCard(double s) {
-    final labels = week ? _replDates7 : _replDates30;
-    final values = week ? _repl7 : _repl30;
-    final avg = values.reduce((a, b) => a + b) / values.length;
+    final today = dayOnly(DateTime.now());
+    final from = shiftDay(today, week ? -6 : -29);
+    // finished oil lives whose change happened inside the chosen window (newest first)
+    final inWindow =
+        svc.replacementStats.where((r) => !r.date.isBefore(from)).toList();
+    // bars: the latest 6, oldest on the left
+    final shown = inWindow.take(6).toList().reversed.toList();
+    final labels = [for (final r in shown) shortDate(r.date)];
+    final values = [for (final r in shown) r.uses.toDouble()];
+    final hasData = values.any((v) => v > 0);
+    final avgGap = inWindow.isEmpty
+        ? null
+        : inWindow.fold<double>(0, (a, r) => a + r.gapDays) / inWindow.length;
+    final n = inWindow.length;
     return Container(
-      height: 648 * s,
+      height: 696 * s,
       decoration: _card(s, 55),
       child: Stack(children: [
         Positioned(
@@ -349,15 +377,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         Positioned(
             right: 40 * s,
             top: 38 * s,
-            child: _chip(s, '${values.length} Changes · ${week ? 7 : 30} days')),
+            child: _chip(
+                s, '$n ${n == 1 ? 'Change' : 'Changes'} · ${week ? 7 : 30} days')),
         Positioned(
           left: 56 * s,
-          top: 157 * s,
+          top: 166 * s, // a bit lower so it clears the 2-line title
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(avg.toStringAsFixed(1),
+              Text(avgGap == null ? '—' : avgGap.toStringAsFixed(1),
                   style: AppText.dmSans(80 * s, weight: FontWeight.w700)),
               SizedBox(width: 10 * s),
               Text('days',
@@ -369,14 +398,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         Positioned(
           left: 56 * s,
           right: 80 * s,
-          top: 222 * s,
-          child: SimpleBarChart(
-            s: s,
-            labels: labels,
-            values: values,
-            valueText: (v) => '${_num(v)} times',
-            plotHeight: 360,
-          ),
+          top: 270 * s, // below the big number (ends ~246) + room for the bar value labels
+          child: hasData
+              ? SimpleBarChart(
+                  s: s,
+                  labels: labels,
+                  values: values,
+                  valueText: (v) => '${_num(v)} times',
+                  plotHeight: 360,
+                )
+              : SizedBox(
+                  height: 360 * s,
+                  child: Center(
+                    child: Text('No oil changes yet',
+                        style: AppText.dmSans(34 * s, color: AppColors.textGray)),
+                  ),
+                ),
         ),
       ]),
     );
@@ -384,7 +421,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, c) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([svc.usage, svc.replacements, svc.readings]),
+      builder: (context, _) => LayoutBuilder(builder: (context, c) {
       final s = c.maxWidth / 1080;
       Widget pad(double l, double r, double bottom, Widget w) =>
           Padding(padding: EdgeInsets.fromLTRB(l * s, 0, r * s, bottom * s), child: w);
@@ -408,7 +447,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           FrySafeHeader(s: s),
         ]),
       );
-    });
+    }),
+    );
   }
 
   void _confirmReplace(BuildContext context) {

@@ -60,7 +60,7 @@ class HomeScreen extends StatelessWidget {
                           padding: EdgeInsets.fromLTRB(96 * s, 0, 92 * s, 0),
                           child: SizedBox(
                             height: 205 * s,
-                            child: RulCard(s: s, odi: m.odi),
+                            child: RulCard(s: s, odi: m.odi, odiPerCycle: svc.odiPerCycle),
                           ),
                         ),
                       ],

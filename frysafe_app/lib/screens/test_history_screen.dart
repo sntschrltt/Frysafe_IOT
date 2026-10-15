@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/reading.dart';
+import '../services/device_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/header_shell.dart';
 import '../widgets/reading_card.dart';
@@ -16,7 +17,11 @@ class _TestHistoryScreenState extends State<TestHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, c) {
+    return ValueListenableBuilder<List<Measurement>>(
+      valueListenable: DeviceService.instance.readings,
+      builder: (context, readings, _) {
+        final groups = _group(readings);
+        return LayoutBuilder(builder: (context, c) {
       final s = c.maxWidth / 1080; // design is 1080 px wide
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -39,15 +44,24 @@ class _TestHistoryScreenState extends State<TestHistoryScreen> {
                     ),
                   ),
                   if (_tab == 0) ...[
-                    for (var i = 0; i < mockHistory.length; i++) ...[
+                    if (groups.isEmpty)
+                      Padding(
+                        padding: EdgeInsets.only(top: 80 * s),
+                        child: Center(
+                          child: Text('No readings yet',
+                              style: AppText.dmSans(34 * s,
+                                  color: AppColors.textGray)),
+                        ),
+                      ),
+                    for (var i = 0; i < groups.length; i++) ...[
                       Padding(
                         padding: EdgeInsets.fromLTRB(
                             90 * s, i == 0 ? 50 * s : 62 * s, 90 * s, 26 * s),
-                        child: Text(mockHistory[i].title,
+                        child: Text(groups[i].title,
                             style:
                                 AppText.arial(38 * s, weight: FontWeight.bold)),
                       ),
-                      for (final r in mockHistory[i].readings)
+                      for (final r in groups[i].readings)
                         Padding(
                           padding:
                               EdgeInsets.fromLTRB(90 * s, 0, 92 * s, 21 * s),
@@ -57,7 +71,7 @@ class _TestHistoryScreenState extends State<TestHistoryScreen> {
                   ] else
                     Padding(
                       padding: EdgeInsets.fromLTRB(90 * s, 44 * s, 92 * s, 0),
-                      child: _TrendsView(s: s),
+                      child: _TrendsView(s: s, readings: readings),
                     ),
                 ],
               ),
@@ -95,6 +109,8 @@ class _TestHistoryScreenState extends State<TestHistoryScreen> {
         ),
       );
     });
+      },
+    );
   }
 }
 
@@ -155,26 +171,7 @@ const _mons = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 ];
 
-/// "Today, June 14" -> Jun 14 (year is a dummy, only month/day matter).
-DateTime? _parseTitleDate(String title) {
-  final m = RegExp(r'([A-Za-z]+)\s+(\d{1,2})\s*$').firstMatch(title);
-  if (m == null) return null;
-  final name = m.group(1)!.toLowerCase();
-  final idx = _mons.indexWhere((x) => name.startsWith(x.toLowerCase()));
-  if (idx < 0) return null;
-  return DateTime(2024, idx + 1, int.parse(m.group(2)!));
-}
-
 String _fmtDate(DateTime d) => '${_mons[d.month - 1]} ${d.day}';
-
-/// "3:12 PM" -> 15.2 (hours since midnight)
-double? _parseHour(String t) {
-  final m = RegExp(r'(\d+):(\d+)\s*(AM|PM)', caseSensitive: false).firstMatch(t);
-  if (m == null) return null;
-  var h = int.parse(m.group(1)!) % 12;
-  if (m.group(3)!.toUpperCase() == 'PM') h += 12;
-  return h + int.parse(m.group(2)!) / 60;
-}
 
 String _hourLabel(double h) {
   final x = h.round() % 24;
@@ -209,55 +206,85 @@ class _TrendData {
       this.pts, this.ticks, this.xMin, this.xMax, this.range, this.showFresh);
 }
 
-/// Builds the chart data from [mockHistory] (newest group first,
-/// newest reading first). When you wire real data, replace this one function.
-_TrendData _buildData(bool week) {
-  final n = mockHistory.length;
-  if (n == 0) return const _TrendData([], [], 0, 1, '', false);
+const _fullMonths = [
+  'January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'
+];
+const _weekdayNames = [
+  'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+];
 
-  final latest = _parseTitleDate(mockHistory.first.title) ?? DateTime.now();
-  DateTime dateFor(int i) =>
-      _parseTitleDate(mockHistory[i].title) ??
-      latest.subtract(Duration(days: i));
+/// "Today, June 14" / "Yesterday, June 13" / "Monday, June 10"
+String _dayTitle(DateTime d) {
+  final today = dayOnly(DateTime.now());
+  final date = '${_fullMonths[d.month - 1]} ${d.day}';
+  if (d == today) return 'Today, $date';
+  if (d == shiftDay(today, -1)) return 'Yesterday, $date';
+  return '${_weekdayNames[d.weekday - 1]}, $date';
+}
+
+/// Groups the shared readings (newest first) by day for the List tab.
+List<ReadingGroup> _group(List<Measurement> list) {
+  final groups = <ReadingGroup>[];
+  DateTime? day;
+  var bucket = <Reading>[];
+  for (final m in list) {
+    final d = dayOnly(m.time);
+    if (day == null || d != day) {
+      if (day != null) groups.add(ReadingGroup(_dayTitle(day), bucket));
+      day = d;
+      bucket = [];
+    }
+    bucket.add(Reading(
+        formatClock(m.time), labelFromOdi(m.odi), m.odi, severityFromOdi(m.odi)));
+  }
+  if (day != null) groups.add(ReadingGroup(_dayTitle(day), bucket));
+  return groups;
+}
+
+/// Builds the chart data from the shared readings (newest first).
+/// Week = daily average for the last 7 days. Day = every reading from
+/// yesterday and today.
+_TrendData _buildData(List<Measurement> all, bool week) {
+  if (all.isEmpty) return const _TrendData([], [], 0, 1, '', false);
+  final today = dayOnly(DateTime.now());
 
   if (week) {
     final pts = <_Pt>[];
-    for (var i = n - 1; i >= 0; i--) {
-      final d = dateFor(i);
-      final slot = 6 - latest.difference(d).inDays;
-      if (slot < 0 || slot > 6) continue;
-      final list = mockHistory[i].readings.toList();
+    for (var slot = 0; slot < 7; slot++) {
+      final d = shiftDay(today, slot - 6);
+      final list = all.where((m) => dayOnly(m.time) == d).toList();
       if (list.isEmpty) continue;
       var sum = 0.0;
-      for (final r in list) {
-        sum += r.odi.toDouble();
+      for (final m in list) {
+        sum += m.odi.toDouble();
       }
       final avg = sum / list.length;
       pts.add(_Pt(slot.toDouble(), avg, _fmtDate(d),
           severityFromOdi(avg.round()), false));
     }
     final ticks = [
-      for (var k = 0; k < 7; k++)
-        _Tick(k.toDouble(), _fmtDate(latest.subtract(Duration(days: 6 - k))))
+      for (var k = 0; k < 7; k++) _Tick(k.toDouble(), _fmtDate(shiftDay(today, k - 6)))
     ];
     return _TrendData(pts, ticks, 0, 6,
-        '${_fmtDate(latest.subtract(const Duration(days: 6)))} – ${_fmtDate(latest)}',
-        false);
+        '${_fmtDate(shiftDay(today, -6))} – ${_fmtDate(today)}', false);
   }
 
+  final yesterday = shiftDay(today, -1);
   final pts = <_Pt>[];
-  for (var i = n - 1; i >= 0; i--) {
-    final day = n - 1 - i;
-    for (final r in mockHistory[i].readings.toList().reversed) {
-      final h = _parseHour(r.time);
-      if (h == null) continue;
-      pts.add(_Pt(day * 24 + h, r.odi.toDouble(), r.time, r.severity,
-          r.label.toLowerCase().contains('fresh')));
-    }
+  for (final m in all.reversed) {
+    final d = dayOnly(m.time);
+    if (d != today && d != yesterday) continue;
+    final h = m.time.hour + m.time.minute / 60;
+    pts.add(_Pt((d == today ? 24 : 0) + h, m.odi.toDouble(), formatClock(m.time),
+        severityFromOdi(m.odi), isFreshOdi(m.odi)));
   }
-  final first = dateFor(n - 1), last = dateFor(0);
-  final range = n == 1 ? _fmtDate(last) : '${_fmtDate(first)} – ${_fmtDate(last)}';
-  if (pts.isEmpty) return _TrendData(pts, const [], 0, 1, range, false);
+  if (pts.isEmpty) return const _TrendData([], [], 0, 1, '', false);
+  final firstDay = pts.first.x >= 24 ? today : yesterday;
+  final lastDay = pts.last.x >= 24 ? today : yesterday;
+  final range = firstDay == lastDay
+      ? _fmtDate(lastDay)
+      : '${_fmtDate(firstDay)} – ${_fmtDate(lastDay)}';
 
   final xMin = pts.first.x, xMax = pts.last.x;
   final ticks = <_Tick>[_Tick(xMin, pts.first.label.replaceAll(' ', ''))];
@@ -270,7 +297,8 @@ _TrendData _buildData(bool week) {
 
 class _TrendsView extends StatefulWidget {
   final double s;
-  const _TrendsView({required this.s});
+  final List<Measurement> readings;
+  const _TrendsView({required this.s, required this.readings});
 
   @override
   State<_TrendsView> createState() => _TrendsViewState();
@@ -279,6 +307,13 @@ class _TrendsView extends StatefulWidget {
 class _TrendsViewState extends State<_TrendsView> {
   bool _week = false;
   int? _sel; // null = latest point
+
+  @override
+  void didUpdateWidget(covariant _TrendsView old) {
+    super.didUpdateWidget(old);
+    // a new reading arrived: jump back to the latest point
+    if (!identical(old.readings, widget.readings)) _sel = null;
+  }
 
   Widget _chip(String label, bool active, VoidCallback onTap) {
     final s = widget.s;
@@ -320,7 +355,7 @@ class _TrendsViewState extends State<_TrendsView> {
   @override
   Widget build(BuildContext context) {
     final s = widget.s;
-    final data = _buildData(_week);
+    final data = _buildData(widget.readings, _week);
     final sel = (_sel != null && _sel! < data.pts.length)
         ? _sel!
         : data.pts.length - 1;

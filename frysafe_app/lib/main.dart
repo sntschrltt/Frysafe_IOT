@@ -1,8 +1,12 @@
-import 'package:flutter/material.dart';
+after i import 'package:flutter/material.dart';
 import 'screens/app_shell.dart';
+import 'services/device_service.dart';
 import 'theme/app_theme.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  DeviceService.instance; // creates the shared mock data (readings, alerts...) first
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
