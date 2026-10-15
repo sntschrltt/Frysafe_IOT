@@ -6,12 +6,16 @@ enum HomeStatus { notConnected, connected, loading, result }
 
 class Measurement {
   final int odi; // percent
-  final double rdr; // color
+  final int r; // color: red channel frequency (Hz)
+  final int g; // color: green channel frequency (Hz)
+  final int b; // color: blue channel frequency (Hz)
   final double mv; // turbidity (millivolts)
   final DateTime time; // when the reading was taken
   const Measurement({
     required this.odi,
-    required this.rdr,
+    required this.r,
+    required this.g,
+    required this.b,
     required this.mv,
     required this.time,
   });
@@ -86,7 +90,7 @@ class DeviceService {
     await Future.delayed(const Duration(seconds: 2));
     if (status.value != HomeStatus.loading) return;
     latest = Measurement(
-        odi: 72, rdr: 0.72, mv: 2.4, time: DateTime.now());
+        odi: 72, r: 1000, g: 8000, b: 1000, mv: 2.4, time: DateTime.now());
     status.value = HomeStatus.result;
     final sev = severityFromOdi(latest!.odi);
     if (sev == Severity.high || sev == Severity.veryHigh) {

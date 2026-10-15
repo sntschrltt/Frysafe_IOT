@@ -25,7 +25,6 @@ class HomeScreen extends StatelessWidget {
           final st = svc.status.value;
           final m = st == HomeStatus.result ? svc.latest : null;
           final sev = m == null ? null : severityFromOdi(m.odi);
-          final fill = sev?.color ?? AppColors.high;
           // Banner: High / Very High reading, and only for the first 10 seconds
           final showBanner = svc.bannerVisible.value &&
               m != null &&
@@ -90,10 +89,24 @@ class HomeScreen extends StatelessWidget {
                                       ]),
                                     ),
                                   ),
-                                  label: 'Color (RDR)',
-                                  value: m?.rdr.toStringAsFixed(2),
-                                  progress: m == null ? 0 : m.rdr / 1.2, // placeholder scale
-                                  color: fill,
+                                  label: 'Color (RGB)',
+                                  lines: m == null
+                                      ? null // no reading: one dash + Hz, same as Turbidity
+                                      : [
+                                    SensorLine(
+                                        swatch: const Color(0xFFE53935),
+                                        value: '${m.r}',
+                                        unit: 'Hz'),
+                                    SensorLine(
+                                        swatch: const Color(0xFF43A047),
+                                        value: '${m.g}',
+                                        unit: 'Hz'),
+                                    SensorLine(
+                                        swatch: const Color(0xFF1E6FE0),
+                                        value: '${m.b}',
+                                        unit: 'Hz'),
+                                  ],
+                                  unit: 'Hz',
                                 ),
                               ),
                               SizedBox(width: 60 * s),
@@ -105,8 +118,6 @@ class HomeScreen extends StatelessWidget {
                                   label: 'Turbidity',
                                   value: m?.mv.toStringAsFixed(1),
                                   unit: 'mV',
-                                  progress: m == null ? 0 : m.mv / 4.0, // placeholder scale
-                                  color: fill,
                                 ),
                               ),
                             ],

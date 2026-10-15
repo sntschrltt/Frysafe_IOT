@@ -2,6 +2,32 @@ import 'package:flutter/material.dart';
 import '../services/device_service.dart';
 import '../theme/app_theme.dart';
 
+/// Shared styles so both Home analytics cards always match.
+/// Change a number here and BOTH cards follow.
+TextStyle _labelStyle(double s, double size) =>
+    AppText.dmSans(size * s, weight: FontWeight.w700).copyWith(height: 1.2);
+
+/// Big-number sizes (design px). The right card has two lines, so its number
+/// is smaller than the one-line number on the left; change them here.
+const _usageValueSize = 88.0; // "2.3 L"
+const _frequencyValueSize = 58.0; // "Every / 2 DAYS"
+
+TextStyle _valueStyle(double s, double size) =>
+    AppText.dmSans(size * s, weight: FontWeight.w700);
+
+/// Two-line card title. Default size 32 (Oil Replacement Frequency);
+/// Daily Oil Usage passes its own bigger size.
+Widget _label(double s, String text, {double size = 32}) => Positioned(
+      left: 108 * s,
+      right: 18 * s,
+      top: 25 * s,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(text, style: _labelStyle(s, size)),
+      ),
+    );
+
 class _Frame extends StatelessWidget {
   final double s;
   final Widget icon;
@@ -47,28 +73,36 @@ class UsageSummaryCard extends StatelessWidget {
       s: s,
       icon: Icon(Icons.calendar_month, size: 46 * s, color: const Color(0xFFF5B800)),
       child: Stack(children: [
+        _label(s, 'Daily Oil\nUsage', size: 36), // only this title is bigger
+        // one line, centered where the two-line value on the other card sits
         Positioned(
-          left: 112 * s,
-          top: 48 * s,
-          child: Text('Daily Oil Usage',
-              style: AppText.dmSans(38 * s, weight: FontWeight.w700)),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          top: 123 * s,
+          left: 20 * s,
+          right: 20 * s,
+          top: 147 * s,
           child: ValueListenableBuilder<double>(
             valueListenable: svc.todayLiters,
-            builder: (_, v, __) => Center(
-              child: Text('${v.toStringAsFixed(1)} L',
-                  style: AppText.dmSans(120 * s, weight: FontWeight.w700)),
+            builder: (_, v, _) => FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(v.toStringAsFixed(1),
+                      style: _valueStyle(s, _usageValueSize)),
+                  SizedBox(width: 8 * s),
+                  Text('L',
+                      style: AppText.dmSans(40 * s,
+                          weight: FontWeight.w700, color: AppColors.textGray)),
+                ],
+              ),
             ),
           ),
         ),
         Positioned(
           left: 0,
           right: 0,
-          top: 266 * s,
+          top: 273 * s,
           child: Center(
               child: Text('Today',
                   style: AppText.dmSans(44 * s,
@@ -95,31 +129,19 @@ class ReplacementSummaryCard extends StatelessWidget {
           final d = svc.avgIntervalDays;
           final last = svc.lastReplaced;
           return Stack(children: [
-            Positioned(
-              left: 108 * s,
-              right: 18 * s,
-              top: 25 * s,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text('Oil Replacement\nFrequency',
-                    style: AppText.dmSans(32 * s, weight: FontWeight.w700)
-                        .copyWith(height: 1.2)),
-              ),
-            ),
+            _label(s, 'Oil Replacement\nFrequency'),
             Positioned(
               left: 0,
               right: 0,
-              top: 138 * s,
+              top: 135 * s,
               child: Text('Every\n${d ?? '—'} ${d == 1 ? 'DAY' : 'DAYS'}',
                   textAlign: TextAlign.center,
-                  style: AppText.dmSans(64 * s, weight: FontWeight.w700)
-                      .copyWith(height: 0.97)),
+                  style: _valueStyle(s, _frequencyValueSize).copyWith(height: 0.97)),
             ),
             Positioned(
               left: 22 * s,
               right: 22 * s,
-              top: 284 * s,
+              top: 282 * s,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
