@@ -1,4 +1,4 @@
-after i import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'screens/app_shell.dart';
 import 'services/device_service.dart';
 import 'theme/app_theme.dart';
