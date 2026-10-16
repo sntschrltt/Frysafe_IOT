@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../models/reading.dart' show formatClock;
 
 enum AlertKind { checkOil, offline, lowLife, lifeUpdated }
 
@@ -7,88 +8,84 @@ class AlertItem {
   final AlertKind kind;
   final String title;
   final String body;
-  final String time; // e.g. "12:00 PM"
-  final int dayOffset; // 0 = today, 1 = yesterday, 3 = 3 days ago ...
+  final DateTime createdAt;
   final bool read;
   const AlertItem({
     required this.id,
     required this.kind,
     required this.title,
     required this.body,
-    required this.time,
-    required this.dayOffset,
+    required this.createdAt,
     this.read = false,
   });
+
+  /// 0 = today, 1 = yesterday, 3 = 3 days ago ...
+  int get dayOffset {
+    final now = DateTime.now();
+    final days = (DateTime(now.year, now.month, now.day)
+                .difference(DateTime(createdAt.year, createdAt.month, createdAt.day))
+                .inHours /
+            24)
+        .round();
+    return days < 0 ? 0 : days;
+  }
+
+  /// e.g. "12:00 PM"
+  String get time => formatClock(createdAt);
 
   AlertItem copyWith({bool? read}) => AlertItem(
         id: id,
         kind: kind,
         title: title,
         body: body,
-        time: time,
-        dayOffset: dayOffset,
+        createdAt: createdAt,
         read: read ?? this.read,
       );
 }
 
-/// MOCK alerts. Later, create them from real events (device offline,
-/// ODI reached a level, no test in X days...). The screen only listens to [alerts].
+/// Alerts are created by [DeviceService] when something really happens
+/// (new reading, oil replaced, probe offline). The screen only listens to [alerts].
 class AlertsService {
   AlertsService._();
   static final instance = AlertsService._();
 
-  final alerts = ValueNotifier<List<AlertItem>>(const [
-    AlertItem(
-      id: 1,
-      kind: AlertKind.checkOil,
-      title: "How's your oil today?",
-      body:
-          'Your last check was 3 days ago (ODI 71%). Dip the probe and push DETECT to see how it is now.',
-      time: '12:00 PM',
-      dayOffset: 0,
-    ),
-    AlertItem(
-      id: 2,
-      kind: AlertKind.offline,
-      title: 'Probe is offline',
-      body: 'FRYSAFE lost Wi-Fi. Readings will not sync until it reconnects.',
-      time: '12:00 PM',
-      dayOffset: 0,
-    ),
-    AlertItem(
-      id: 3,
-      kind: AlertKind.checkOil,
-      title: "How's your oil today?",
-      body:
-          'Your last check was 2 days ago (ODI 71%). Dip the probe and push DETECT to see how it is now.',
-      time: '12:00 PM',
-      dayOffset: 1,
-      read: true,
-    ),
-    AlertItem(
-      id: 4,
-      kind: AlertKind.lowLife,
-      title: 'Oil is running out of life',
-      body: 'ODI 71% (High). About 1 frying cycle left before the 75 limit.',
-      time: '3:12 PM',
-      dayOffset: 3,
-      read: true,
-    ),
-    AlertItem(
-      id: 5,
-      kind: AlertKind.lifeUpdated,
-      title: 'Remaining life updated',
-      body: 'ODI 43% (Moderate). About 4 frying cycles left.',
-      time: '10:30 AM',
-      dayOffset: 3,
-      read: true,
-    ),
-  ]);
+  /// Newest first.
+  final alerts = ValueNotifier<List<AlertItem>>(const []);
+  int _nextId = 1;
+
+  void add({
+    required AlertKind kind,
+    required String title,
+    required String body,
+    DateTime? at,
+    bool read = false,
+  }) {
+    final item = AlertItem(
+      id: _nextId++,
+      kind: kind,
+      title: title,
+      body: body,
+      createdAt: at ?? DateTime.now(),
+      read: read,
+    );
+    final list = [item, ...alerts.value]..sort((a, b) {
+        final c = b.createdAt.compareTo(a.createdAt);
+        return c != 0 ? c : b.id.compareTo(a.id);
+      });
+    alerts.value = list;
+  }
 
   int get unread => alerts.value.where((a) => !a.read).length;
 
+  bool hasUnread(AlertKind kind) =>
+      alerts.value.any((a) => a.kind == kind && !a.read);
+
   void markRead(int id) => alerts.value = [
         for (final a in alerts.value) a.id == id ? a.copyWith(read: true) : a
+      ];
+
+  void markKindRead(AlertKind kind) => alerts.value = [
+        for (final a in alerts.value) a.kind == kind ? a.copyWith(read: true) : a
       ];
 
   void markAllRead() =>

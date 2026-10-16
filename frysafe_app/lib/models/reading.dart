@@ -33,21 +33,6 @@ class ReadingGroup {
   const ReadingGroup(this.title, this.readings);
 }
 
-/// MOCK DATA. Later, replace this with data from your device/backend
-/// (e.g. a ReadingService) and the UI stays the same.
-const mockHistory = [
-  ReadingGroup('Today, June 14', [
-    Reading('3:12 PM', 'Very High Degraded', 88, Severity.veryHigh),
-    Reading('2:31 PM', 'High Degraded', 71, Severity.high),
-    Reading('10:30 AM', 'Moderate Degraded', 43, Severity.moderate),
-    Reading('9:30 AM', 'Low Degraded', 18, Severity.low),
-  ]),
-  ReadingGroup('Yesterday, June 13', [
-    Reading('9:30 PM', 'Fresh Oil', 7, Severity.low),
-    Reading('7:30 PM', 'Fresh Oil', 1, Severity.low),
-  ]),
-];
-
 /// ODI levels (same as the About screen): 0-24 Low, 25-49 Moderate, 50-74 High, 75-100 Very High.
 Severity severityFromOdi(int odi) {
   if (odi >= 75) return Severity.veryHigh;
@@ -63,4 +48,35 @@ extension SeverityHeadline on Severity {
         Severity.moderate => 'CAUTION – Monitor Oil',
         Severity.low => 'GOOD – Oil Is Fine',
       };
+}
+
+extension SeverityName on Severity {
+  /// "Very High", "High", "Moderate", "Low" (for sentences, not badges).
+  String get title => switch (this) {
+        Severity.veryHigh => 'Very High',
+        Severity.high => 'High',
+        Severity.moderate => 'Moderate',
+        Severity.low => 'Low',
+      };
+}
+
+/// ODI under 10 counts as brand-new oil.
+bool isFreshOdi(int odi) => odi < 10;
+
+/// Label shown on every History card.
+String labelFromOdi(int odi) {
+  if (isFreshOdi(odi)) return 'Fresh Oil';
+  return switch (severityFromOdi(odi)) {
+    Severity.veryHigh => 'Very High Degraded',
+    Severity.high => 'High Degraded',
+    Severity.moderate => 'Moderate Degraded',
+    Severity.low => 'Low Degraded',
+  };
+}
+
+/// "3:12 PM"
+String formatClock(DateTime d) {
+  final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
+  final m = d.minute.toString().padLeft(2, '0');
+  return '$h:$m ${d.hour >= 12 ? 'PM' : 'AM'}';
 }
